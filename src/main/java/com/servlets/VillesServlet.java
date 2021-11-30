@@ -1,15 +1,11 @@
 package com.servlets;
 
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URL;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandler;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,15 +19,15 @@ import org.json.JSONObject;
 import com.models.Ville;
 
 /**
- * Servlet implementation class DistanceServlet
+ * Servlet implementation class VillesServlet
  */
-public class DistanceServlet extends HttpServlet {
+public class VillesServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public DistanceServlet() {
+    public VillesServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -40,6 +36,8 @@ public class DistanceServlet extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		int page=1;
+		if(request.getParameter("page") != null) page = Integer.parseInt(request.getParameter("page"));
 		URL url = new URL("http://localhost:8181/ville");
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 		con.setRequestMethod("GET");
@@ -58,33 +56,26 @@ public class DistanceServlet extends HttpServlet {
 		jsonedContent = jsonedContent.replace("[","");
 		String[] tabledContent = jsonedContent.split("\\},\\{");
 		List<Ville> listOfCities = new ArrayList<Ville>();
-		for (String entry : tabledContent) {
+		page=Math.min(page, tabledContent.length/50+1);
+		page=Math.max(1, page);
+		for (int i = (page-1)*50;i<Math.min(tabledContent.length,page*50);i++) {
+			String entry=tabledContent[i];
 			if(entry.charAt(0)!='{') entry="{"+entry;
 			if(entry.charAt(entry.length()-1)!='}') entry=entry+"}";
 			JSONObject ob = new JSONObject(entry);
 			listOfCities.add(new Ville(ob));
 		}
 		request.setAttribute("listCities", listOfCities);
-		request.getRequestDispatcher("index.jsp").forward(request, response);
-
+		request.setAttribute("page", page);
+		request.setAttribute("lastPage", page==tabledContent.length/50+1);
+		request.getRequestDispatcher("villes.jsp").forward(request, response);
 	}
 
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		Double latitudeArrivee=Double.parseDouble(request.getParameter("villeArrivee").split(";")[2]);
-		Double longitudeArrivee=Double.parseDouble(request.getParameter("villeArrivee").split(";")[1]);
-		Double latitudeDepart=Double.parseDouble(request.getParameter("villeDepart").split(";")[2]);
-		Double longitudeDepart=Double.parseDouble(request.getParameter("villeDepart").split(";")[1]);
-		int r = 6371;
-		double p = 0.017453292519943295;  //Pi/180
-		double a = 0.5 - Math.cos((latitudeArrivee-latitudeDepart)*p)/2 + Math.cos(latitudeDepart*p)*Math.cos(latitudeArrivee*p) * (1-Math.cos((longitudeArrivee-longitudeDepart)*p)) / 2;
-
-		double d = 2 * r * Math.asin(Math.sqrt(a));
-		request.setAttribute("nomDepart",request.getParameter("villeDepart").split(";")[0]);
-		request.setAttribute("nomArrivee",request.getParameter("villeArrivee").split(";")[0]);
-		request.setAttribute("distance", d);
+		// TODO Auto-generated method stub
 		doGet(request, response);
 	}
 
